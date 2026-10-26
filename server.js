@@ -6,7 +6,30 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 
-app.use(cors());
+// Allowed origins (Vercel Frontend & Localhost)
+const allowedOrigins = [
+  'https://e-commerce-localizer.vercel.app',
+  'http://localhost:3000'
+];
+
+// Standard CORS Configuration
+app.use(cors({
+  origin: function (origin, callback) {
+    // Mobile app / curl / postman ba non-browser origin allow kora
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS Policy Error'), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Pre-flight (OPTIONS) requests explicitly handle kora
+app.options('*', cors());
+
 app.use(express.json());
 
 const supabaseUrl = process.env.SUPABASE_URL;
