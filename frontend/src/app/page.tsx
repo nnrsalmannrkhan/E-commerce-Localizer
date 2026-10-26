@@ -124,25 +124,29 @@ export default function Dashboard() {
     }
 
     // Free credit limit check before request
-    if (!isPro && creditsUsed >= 3) {
-      setShowPricing(true);
-      return;
-    }
+if (!isPro && creditsUsed >= 3) {
+  setShowPricing(true);
+  return;
+}
 
-    setLoading(true);
-    setResult(null);
+setLoading(true);
+setResult(null);
 
-    try {
-      const response = await fetch('http://localhost:5000/api/v1/localize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          userEmail: userEmail,
-        }),
-      });
+try {
+  // Render live backend URL ba fallback hishebe localhost use kora
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/localize`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...formData,
+      userEmail: userEmail,
+    }),
+  });
+  // end new add
 
       const resData = await response.json();
 
