@@ -12,10 +12,9 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// Standard CORS Configuration
+// Standard CORS Configuration (Eti-i preflight/OPTIONS request automatic handle korbe)
 app.use(cors({
   origin: function (origin, callback) {
-    // Mobile app / curl / postman ba non-browser origin allow kora
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
       return callback(null, true);
@@ -27,9 +26,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Pre-flight (OPTIONS) requests explicitly handle kora
-app.options('*', cors());
-
 app.use(express.json());
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -39,6 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+// end new add
 
 // Health Check Route
 app.get('/api/v1/health', async (req, res) => {
