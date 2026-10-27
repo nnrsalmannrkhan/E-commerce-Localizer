@@ -23,9 +23,7 @@ export default function Dashboard() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
 
-  // ==========================================
-  // 1. User & Credit States (Ekbare declare kora holo)
-  // ==========================================
+  // User & Credit States
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPro, setIsPro] = useState<boolean>(false);
   const [creditsUsed, setCreditsUsed] = useState<number>(0);
@@ -37,9 +35,7 @@ export default function Dashboard() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // ==========================================
-  // 2. Database Sync & Auth Setup
-  // ==========================================
+  // Database Sync Function
   const fetchUserProfile = async (email: string) => {
     try {
       const { data, error } = await supabase
@@ -85,7 +81,6 @@ export default function Dashboard() {
       }
     };
   }, []);
-  //end new add
 
   const checkUserSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -93,7 +88,7 @@ export default function Dashboard() {
       setUserEmail(session.user.email);
       fetchUserProfile(session.user.email);
     }
-  }
+  };
 
   const fetchUserProfile = async (email: string) => {
     try {
