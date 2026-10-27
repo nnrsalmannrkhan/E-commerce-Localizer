@@ -23,30 +23,69 @@ export default function Dashboard() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
 
-  // Auth & Profile States
+  // ==========================================
+  // 1. User & Credit States (Ekbare declare kora holo)
+  // ==========================================
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState(false);
-  const [creditsUsed, setCreditsUsed] = useState(0);
+  const [isPro, setIsPro] = useState<boolean>(false);
+  const [creditsUsed, setCreditsUsed] = useState<number>(0);
+
+  // Other Auth States
   const [authInputEmail, setAuthInputEmail] = useState('');
   const [authInputPassword, setAuthInputPassword] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Load Lemon Squeezy Script
+  // ==========================================
+  // 2. Database Sync & Auth Setup
+  // ==========================================
+  const fetchUserProfile = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_pro, credits_used')
+        .eq('email', email)
+        .single();
+
+      if (data) {
+        setIsPro(data.is_pro);
+        setCreditsUsed(data.credits_used || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
   useEffect(() => {
+    // Load Lemon Squeezy Script
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
     script.defer = true;
     document.body.appendChild(script);
 
-    // Fetch initial user session
-    checkUserSession();
+    // Auto-sync User Session and Database Credits
+    const initUserAndCredits = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          setUserEmail(user.email);
+          await fetchUserProfile(user.email);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+      }
+    };
+
+    initUserAndCredits();
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
+  //end new add
 
   const checkUserSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -54,7 +93,7 @@ export default function Dashboard() {
       setUserEmail(session.user.email);
       fetchUserProfile(session.user.email);
     }
-  };
+  }
 
   const fetchUserProfile = async (email: string) => {
     try {
@@ -219,6 +258,9 @@ try {
                     <Zap className="w-3 h-3 fill-amber-400" /> Pro Unlimited
                   </span>
                 ) : (
+                  {/* ==========================================
+                  3. Dynamic Free Credit UI Display
+                  ========================================== */}
                   <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold">
                     Free Credits: {Math.max(0, 3 - creditsUsed)}/3
                   </span>
