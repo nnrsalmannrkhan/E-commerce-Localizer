@@ -253,14 +253,11 @@ try {
                   {userEmail}
                 </span>
 
-                {isPro ? (
+                  {isPro ? (
                   <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                     <Zap className="w-3 h-3 fill-amber-400" /> Pro Unlimited
                   </span>
                 ) : (
-                  {/* ==========================================
-                  3. Dynamic Free Credit UI Display
-                  ========================================== */}
                   <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold">
                     Free Credits: {Math.max(0, 3 - creditsUsed)}/3
                   </span>
