@@ -23,62 +23,28 @@ export default function Dashboard() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
 
-  // User & Credit States
+  // Auth & Profile States
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState<boolean>(false);
-  const [creditsUsed, setCreditsUsed] = useState<number>(0);
-
-  // Other Auth States
+  const [isPro, setIsPro] = useState(false);
+  const [creditsUsed, setCreditsUsed] = useState(0);
   const [authInputEmail, setAuthInputEmail] = useState('');
   const [authInputPassword, setAuthInputPassword] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Database Sync Function
-  const fetchUserProfile = async (email: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_pro, credits_used')
-        .eq('email', email)
-        .single();
-
-      if (data) {
-        setIsPro(data.is_pro);
-        setCreditsUsed(data.credits_used || 0);
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    }
-  };
-
+  // Load Lemon Squeezy Script
   useEffect(() => {
-    // Load Lemon Squeezy Script
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
     script.defer = true;
     document.body.appendChild(script);
 
-    // Auto-sync User Session and Database Credits
-    const initUserAndCredits = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          setUserEmail(user.email);
-          await fetchUserProfile(user.email);
-        }
-      } catch (err) {
-        console.error('Session check error:', err);
-      }
-    };
-
-    initUserAndCredits();
+    // Fetch initial user session
+    checkUserSession();
 
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+      document.body.removeChild(script);
     };
   }, []);
 
@@ -88,7 +54,7 @@ export default function Dashboard() {
       setUserEmail(session.user.email);
       fetchUserProfile(session.user.email);
     }
-  };
+  }
 
   const fetchUserProfile = async (email: string) => {
     try {
@@ -248,7 +214,7 @@ try {
                   {userEmail}
                 </span>
 
-                  {isPro ? (
+                {isPro ? (
                   <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                     <Zap className="w-3 h-3 fill-amber-400" /> Pro Unlimited
                   </span>
@@ -410,7 +376,7 @@ try {
                 </div>
                 <button
                   onClick={() => handleCheckout('https://salmankhan.lemonsqueezy.com/checkout/buy/14440eeb-8d46-40fb-9def-32640137988b')}
-                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2" 
                 >
                   <ShieldCheck className="w-4 h-4" /> Subscribe via Lemon Squeezy
                 </button>
