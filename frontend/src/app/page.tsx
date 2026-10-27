@@ -35,7 +35,7 @@ export default function Dashboard() {
 
   // start add new
   // ==========================================
-  // Database Profile Sync Function
+  // 1. Database Profile Sync Function
   // ==========================================
   const fetchUserProfile = async (email: string) => {
     try {
@@ -47,34 +47,40 @@ export default function Dashboard() {
 
       if (data) {
         setIsPro(data.is_pro);
-        setCreditsUsed(data.credits_used || 0); // Database theke actual credits load hobe
+        setCreditsUsed(data.credits_used || 0);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
   };
 
-  // Load Lemon Squeezy Script & Sync Credits on Page Load
+  // ==========================================
+  // 2. Check User Session Function
+  // ==========================================
+  const checkUserSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        await fetchUserProfile(session.user.email);
+      }
+    } catch (err) {
+      console.error('Session check error:', err);
+    }
+  };
+
+  // ==========================================
+  // 3. Load Script & Run Session Check on Load
+  // ==========================================
   useEffect(() => {
+    // Load Lemon Squeezy Script
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
     script.defer = true;
     document.body.appendChild(script);
 
-    // Auto-sync User Session and Database Credits on Load/Refresh
-    const initUserAndCredits = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          setUserEmail(user.email);
-          await fetchUserProfile(user.email);
-        }
-      } catch (err) {
-        console.error('Session check error:', err);
-      }
-    };
-
-    initUserAndCredits();
+    // Fetch initial user session & database credits
+    checkUserSession();
 
     return () => {
       if (document.body.contains(script)) {
@@ -82,7 +88,6 @@ export default function Dashboard() {
       }
     };
   }, []);
-  // end add new
 
   const checkUserSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
