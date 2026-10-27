@@ -23,20 +23,20 @@ export default function Dashboard() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
 
-  // Auth & Profile States
+  // start add new
+  // User & Credit States
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState(false);
-  const [creditsUsed, setCreditsUsed] = useState(0);
+  const [isPro, setIsPro] = useState<boolean>(false);
+  const [creditsUsed, setCreditsUsed] = useState<number>(0);
+
+  // Other Auth States
   const [authInputEmail, setAuthInputEmail] = useState('');
   const [authInputPassword, setAuthInputPassword] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // start add new
-  // ==========================================
-  // 1. Database Profile Sync Function
-  // ==========================================
+  // Database Profile Sync Function
   const fetchUserProfile = async (email: string) => {
     try {
       const { data, error } = await supabase
@@ -54,9 +54,7 @@ export default function Dashboard() {
     }
   };
 
-  // ==========================================
-  // 2. Check User Session Function
-  // ==========================================
+  // Check User Session Function
   const checkUserSession = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -69,17 +67,13 @@ export default function Dashboard() {
     }
   };
 
-  // ==========================================
-  // 3. Load Script & Run Session Check on Load
-  // ==========================================
+  // Load Lemon Squeezy Script & Run Session Check on Load
   useEffect(() => {
-    // Load Lemon Squeezy Script
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
     script.defer = true;
     document.body.appendChild(script);
 
-    // Fetch initial user session & database credits
     checkUserSession();
 
     return () => {
