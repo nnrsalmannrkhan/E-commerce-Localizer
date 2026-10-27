@@ -33,20 +33,56 @@ export default function Dashboard() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Load Lemon Squeezy Script
+  // start add new
+  // ==========================================
+  // Database Profile Sync Function
+  // ==========================================
+  const fetchUserProfile = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_pro, credits_used')
+        .eq('email', email)
+        .single();
+
+      if (data) {
+        setIsPro(data.is_pro);
+        setCreditsUsed(data.credits_used || 0); // Database theke actual credits load hobe
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
+  // Load Lemon Squeezy Script & Sync Credits on Page Load
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
     script.defer = true;
     document.body.appendChild(script);
 
-    // Fetch initial user session
-    checkUserSession();
+    // Auto-sync User Session and Database Credits on Load/Refresh
+    const initUserAndCredits = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          setUserEmail(user.email);
+          await fetchUserProfile(user.email);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+      }
+    };
+
+    initUserAndCredits();
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
+  // end add new
 
   const checkUserSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
