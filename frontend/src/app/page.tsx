@@ -36,10 +36,10 @@ export default function Dashboard() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // 1. Database Profile Sync Function (Type-safe)
-  const fetchUserProfile = async (email: string): Promise<void> => {
+  // Database Profile Sync Function (Type-safe)
+  const fetchUserProfile = async (email: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error }: { data: any; error: any } = await supabase
         .from('profiles')
         .select('is_pro, credits_used')
         .eq('email', email)
@@ -49,21 +49,21 @@ export default function Dashboard() {
         setIsPro(Boolean(data.is_pro));
         setCreditsUsed(Number(data.credits_used) || 0);
       }
-    } catch (err: any) {
-      console.error('Error fetching profile:', err?.message || err);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
     }
   };
 
-  // 2. Check User Session Function (Type-safe)
-  const checkUserSession = async (): Promise<void> => {
+  // Check User Session Function (Type-safe)
+  const checkUserSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error }: { data: any; error: any } = await supabase.auth.getSession();
       if (session?.user?.email) {
         setUserEmail(session.user.email);
         await fetchUserProfile(session.user.email);
       }
-    } catch (err: any) {
-      console.error('Session check error:', err?.message || err);
+    } catch (err) {
+      console.error('Session check error:', err);
     }
   };
 
