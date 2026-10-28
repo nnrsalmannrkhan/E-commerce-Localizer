@@ -23,13 +23,10 @@ export default function Dashboard() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
 
-  // start add new
-  // User & Credit States
+  // Auth & Profile States
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState<boolean>(false);
-  const [creditsUsed, setCreditsUsed] = useState<number>(0);
-
-  // Other Auth States
+  const [isPro, setIsPro] = useState(false);
+  const [creditsUsed, setCreditsUsed] = useState(0);
   const [authInputEmail, setAuthInputEmail] = useState('');
   const [authInputPassword, setAuthInputPassword] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
