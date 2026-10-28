@@ -36,8 +36,8 @@ export default function Dashboard() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Database Profile Sync Function
-  const fetchUserProfile = async (email: string) => {
+  // 1. Database Profile Sync Function (Type-safe)
+  const fetchUserProfile = async (email: string): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -46,28 +46,28 @@ export default function Dashboard() {
         .single();
 
       if (data) {
-        setIsPro(data.is_pro);
-        setCreditsUsed(data.credits_used || 0);
+        setIsPro(Boolean(data.is_pro));
+        setCreditsUsed(Number(data.credits_used) || 0);
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    } catch (err: any) {
+      console.error('Error fetching profile:', err?.message || err);
     }
   };
 
-  // Check User Session Function
-  const checkUserSession = async () => {
+  // 2. Check User Session Function (Type-safe)
+  const checkUserSession = async (): Promise<void> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email) {
         setUserEmail(session.user.email);
         await fetchUserProfile(session.user.email);
       }
-    } catch (err) {
-      console.error('Session check error:', err);
+    } catch (err: any) {
+      console.error('Session check error:', err?.message || err);
     }
   };
 
-  // Load Lemon Squeezy Script & Run Session Check on Load
+  // 3. Load Script & Run Session Check on Load
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://assets.lemonsqueezy.com/lemon.js';
