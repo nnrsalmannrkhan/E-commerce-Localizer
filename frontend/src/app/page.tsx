@@ -32,37 +32,6 @@ export default function Dashboard() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
-
-  // Database Profile Sync Function (Type-safe)
-  const fetchUserProfile = async (email: string) => {
-    try {
-      const { data, error }: { data: any; error: any } = await supabase
-        .from('profiles')
-        .select('is_pro, credits_used')
-        .eq('email', email)
-        .single();
-
-      if (data) {
-        setIsPro(Boolean(data.is_pro));
-        setCreditsUsed(Number(data.credits_used) || 0);
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    }
-  };
-
-  // Check User Session Function (Type-safe)
-  const checkUserSession = async () => {
-    try {
-      const { data: { session }, error }: { data: any; error: any } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        setUserEmail(session.user.email);
-        await fetchUserProfile(session.user.email);
-      }
-    } catch (err) {
-      console.error('Session check error:', err);
-    }
-  };
   
   // Load Lemon Squeezy Script
   useEffect(() => {
@@ -93,12 +62,20 @@ export default function Dashboard() {
         .from('profiles')
         .select('is_pro, credits_used')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
-      if (data) {
-        setIsPro(data.is_pro);
-        setCreditsUsed(data.credits_used || 0);
+      if (error) {
+        console.error('Profile fetch error:', error.message);
+        return;
       }
+
+      if (!data) {
+        console.warn('Profile row not found or blocked by RLS for:', email);
+        return;
+      }
+
+      setIsPro(data.is_pro ?? false);
+      setCreditsUsed(data.credits_used ?? 0);
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
