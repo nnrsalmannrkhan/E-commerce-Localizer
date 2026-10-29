@@ -52,25 +52,42 @@ app.post('/api/v1/localize', async (req, res) => {
       });
     }
 
-    // Free User & Pro Status Check
+       // Free User & Pro Status Check (daily limit, UTC date)
+    const todayStr = new Date().toISOString().slice(0, 10);
     let isProUser = false;
-    if (userEmail) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', userEmail)
-        .single();
+    let usedToday = 0;
 
-      if (profile) {
-        isProUser = profile.is_pro;
-        if (!isProUser && profile.credits_used >= 3) {
-          return res.status(403).json({
-            status: 'limit_exceeded',
-            message: 'Free limit reached (3/3). Please upgrade to Pro Unlimited to continue.'
-          });
-        }
-      } else {
-        await supabase.from('profiles').insert([{ email: userEmail, is_pro: false, credits_used: 0 }]);
+    if (userEmail) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, is_pro, credits_used, last_credit_date')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Profile select error:', profileError.message);
+        return res.status(500).json({
+          status: 'error',
+          message: 'Could not read profile: ' + profileError.message
+        });
+      }
+
+      if (!profile) {
+        console.error('No profile row found for:', userEmail);
+        return res.status(404).json({
+          status: 'error',
+          message: 'Profile not found. Please logout and login again.'
+        });
+      }
+
+      isProUser = profile.is_pro === true;
+      usedToday = profile.last_credit_date === todayStr ? (profile.credits_used || 0) : 0;
+
+      if (!isProUser && usedToday >= 3) {
+        return res.status(403).json({
+          status: 'limit_exceeded',
+          message: 'Daily free limit reached (3/3). Upgrade to Pro Unlimited or come back tomorrow.'
+        });
       }
     }
 
@@ -145,17 +162,17 @@ JSON Schema:
 
     // Increment credits_used if it's a free user
     if (userEmail && !isProUser) {
-      const { data: currentProfile } = await supabase
+      const { data: updatedRows, error: updateError } = await supabase
         .from('profiles')
-        .select('credits_used')
+        .update({ credits_used: usedToday + 1, last_credit_date: todayStr })
         .eq('email', userEmail)
-        .single();
-      
-      const newCount = (currentProfile?.credits_used || 0) + 1;
-      await supabase
-        .from('profiles')
-        .update({ credits_used: newCount })
-        .eq('email', userEmail);
+        .select('credits_used');
+
+      if (updateError) {
+        console.error('Credits update error:', updateError.message);
+      } else if (!updatedRows || updatedRows.length === 0) {
+        console.error('Credits update touched 0 rows (RLS block ba email mile nai) for:', userEmail);
+      }
     }
 
     // Send formatted result to Frontend
