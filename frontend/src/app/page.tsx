@@ -56,11 +56,11 @@ export default function Dashboard() {
     }
   }
 
-  const fetchUserProfile = async (email: string) => {
+    const fetchUserProfile = async (email: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('is_pro, credits_used')
+        .select('is_pro, credits_used, last_credit_date')
         .eq('email', email)
         .maybeSingle();
 
@@ -73,9 +73,10 @@ export default function Dashboard() {
         console.warn('Profile row not found or blocked by RLS for:', email);
         return;
       }
-
+      
+      const today = new Date().toISOString().slice(0, 10);
       setIsPro(data.is_pro ?? false);
-      setCreditsUsed(data.credits_used ?? 0);
+      setCreditsUsed(data.last_credit_date === today ? (data.credits_used ?? 0) : 0);
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
