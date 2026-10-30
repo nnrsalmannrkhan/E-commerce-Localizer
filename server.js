@@ -44,8 +44,21 @@ app.get('/api/v1/health', async (req, res) => {
 // ==========================================
 app.post('/api/v1/localize', async (req, res) => {
   try {
-    const { title, description, targetLanguage, targetMarket, userEmail } = req.body;
+        const { title, description, targetLanguage, targetMarket } = req.body;
 
+    // Verify logged-in user from Supabase token (do not trust email from body)
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ status: 'error', message: 'Login required.' });
+    }
+
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !userData?.user?.email) {
+      return res.status(401).json({ status: 'error', message: 'Invalid or expired session. Please login again.' });
+    }
+    const userEmail = userData.user.email;
+    
     if (!title || !description || !targetLanguage) {
       return res.status(400).json({ 
         error: 'Missing required fields: title, description, and targetLanguage are required.' 
@@ -107,11 +120,13 @@ JSON Schema:
   "culturalNotes": "Write key cultural insights in ${targetLanguage}"
 }`;
 
-    const modelName = process.env.AI_MODEL || 'claude-3-5-sonnet-20241022';
+    const modelName = isProUser
+      ? (process.env.AI_MODEL_PRO || 'claude-sonnet-5-5')
+      : (process.env.AI_MODEL_FREE || 'claude-haiku-5-5');
 
     const response = await anthropic.messages.create({
       model: modelName,
-      max_tokens: 1500,
+      max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }]
     });
 
