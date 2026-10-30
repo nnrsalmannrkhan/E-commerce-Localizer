@@ -112,6 +112,7 @@ Product Title: ${title}
 Product Description: ${description}
 
 STRICT RULE: Output MUST be a valid JSON object only. Do NOT add markdown tags, intro, or outro.
+Do NOT invent product specifications, materials, certifications, delivery, payment, return or warranty claims that are not in the original description. If details are missing, keep the copy general and focus on benefits clearly implied by the input.
 
 JSON Schema:
 {
