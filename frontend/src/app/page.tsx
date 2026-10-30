@@ -73,7 +73,7 @@ export default function Dashboard() {
         console.warn('Profile row not found or blocked by RLS for:', email);
         return;
       }
-      
+
       const today = new Date().toISOString().slice(0, 10);
       setIsPro(data.is_pro ?? false);
       setCreditsUsed(data.last_credit_date === today ? (data.credits_used ?? 0) : 0);
@@ -143,16 +143,24 @@ setResult(null);
 
 try {
   // Render live backend URL ba fallback hishebe localhost use kora
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    alert('Session expired. Please login again.');
+    setShowAuthModal(true);
+    return;
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/v1/localize`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
       ...formData,
-      userEmail: userEmail,
     }),
   });
   // end new add
