@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const Anthropic = require('@anthropic-ai/sdk');
+const crypto = require('crypto');
 
 const app = express();
 
@@ -17,7 +18,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf; // needed for webhook signature check
+  }
+}));
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -131,6 +136,8 @@ JSON Schema:
       messages: [{ role: 'user', content: prompt }]
     });
 
+    console.log('AI model:', response.model, '| input tokens:', response.usage?.input_tokens, '| output tokens:', response.usage?.output_tokens);
+
     const rawText = response.content[0]?.text || '';
 
     // Advanced JSON Sanitizer
@@ -207,27 +214,80 @@ JSON Schema:
 // ==========================================
 // 2. Lemon Squeezy Webhook Endpoint
 // ==========================================
-app.post('/api/v1/webhook/lemonsqueezy', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/api/v1/webhook/lemonsqueezy', async (req, res) => {
   try {
-    const event = JSON.parse(req.body.toString());
-    const eventName = event.meta.event_name;
+    const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error('Webhook: LEMON_SQUEEZY_WEBHOOK_SECRET is not set');
+      return res.status(500).send('Webhook not configured');
+    }
 
-    console.log(`💳 Received Lemon Squeezy Event: ${eventName}`);
+    // 1) Verify signature (X-Signature = HMAC SHA256 hex of the raw body)
+    const signature = req.get('X-Signature') || '';
+    const digest = crypto
+      .createHmac('sha256', secret)
+      .update(req.rawBody || Buffer.alloc(0))
+      .digest('hex');
 
-    if (eventName === 'order_created' || eventName === 'subscription_created') {
-      const userEmail = event.data.attributes.user_email;
-      console.log(`🎉 Pro Upgrade Successful for: ${userEmail}`);
+    const sigBuf = Buffer.from(signature, 'utf8');
+    const digBuf = Buffer.from(digest, 'utf8');
+    if (sigBuf.length !== digBuf.length || !crypto.timingSafeEqual(sigBuf, digBuf)) {
+      console.error('Webhook: invalid signature');
+      return res.status(401).send('Invalid signature');
+    }
 
-      await supabase
+    // 2) Read the event
+    const event = req.body;
+    const eventName = event?.meta?.event_name;
+    const email = (event?.data?.attributes?.user_email || '').trim().toLowerCase();
+    console.log(`Lemon Squeezy event: ${eventName} | test_mode: ${event?.meta?.test_mode} | email: ${email}`);
+
+    if (!eventName || !email) {
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    // 3) Decide Pro on/off
+    const grantEvents = [
+      'subscription_created',
+      'subscription_resumed',
+      'subscription_unpaused',
+      'subscription_payment_success',
+      'subscription_payment_recovered'
+    ];
+    const revokeEvents = ['subscription_expired', 'order_refunded'];
+
+    let newStatus = null;
+    if (grantEvents.includes(eventName)) {
+      newStatus = true;
+    } else if (eventName === 'order_created' && event?.data?.attributes?.status === 'paid') {
+      newStatus = true;
+    } else if (revokeEvents.includes(eventName)) {
+      newStatus = false;
+    }
+    // subscription_cancelled / payment_failed: access stays until subscription_expired
+
+    if (newStatus !== null) {
+      const { data: rows, error } = await supabase
         .from('profiles')
-        .update({ is_pro: true })
-        .eq('email', userEmail);
+        .update({ is_pro: newStatus })
+        .eq('email', email)
+        .select('id');
+
+      if (error) {
+        console.error('Webhook: profile update error:', error.message);
+        return res.status(500).send('Update failed');
+      }
+      if (!rows || rows.length === 0) {
+        console.error('Webhook: no profile found for', email);
+      } else {
+        console.log(`Webhook: is_pro=${newStatus} set for`, email);
+      }
     }
 
     res.status(200).json({ received: true });
   } catch (err) {
     console.error('Webhook Error:', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(500).send('Webhook Error');
   }
 });
 
