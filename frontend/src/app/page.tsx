@@ -201,11 +201,18 @@ try {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleCheckout = (checkoutUrl: string) => {
+    const handleCheckout = (checkoutUrl: string) => {
+    if (!userEmail) {
+      alert('Please Login or Sign Up first, then upgrade to Pro.');
+      setShowPricing(false);
+      setShowAuthModal(true);
+      return;
+    }
     if ((window as any).createLemonSqueezy) {
       (window as any).createLemonSqueezy();
     }
-    window.location.href = checkoutUrl;
+    const separator = checkoutUrl.includes('?') ? '&' : '?';
+    window.location.href = `${checkoutUrl}${separator}checkout[email]=${encodeURIComponent(userEmail)}`;
   };
 
   return (
