@@ -203,7 +203,6 @@ try {
 
     const handleCheckout = (checkoutUrl: string) => {
     if (!userEmail) {
-      alert('Please Login or Sign Up first, then upgrade to Pro.');
       setShowPricing(false);
       setShowAuthModal(true);
       return;
