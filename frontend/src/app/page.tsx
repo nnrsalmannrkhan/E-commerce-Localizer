@@ -392,9 +392,9 @@ try {
                   <div className="text-2xl font-extrabold text-white mb-4">$29 <span className="text-xs font-normal text-slate-400">/ month</span></div>
                   <ul className="space-y-2 text-xs text-slate-300 mb-6">
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited AI Localizations</li>
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> High-Priority Claude 3.5 Sonnet</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Premium Claude Sonnet AI Engine</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Full Cultural Market Insights</li>
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> API Access & Shopify Export</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> API Access & Shopify Export (Coming Soon)</li>
                   </ul>
                 </div>
                 <button
