@@ -224,7 +224,7 @@ try {
               <Globe className="w-6 h-6" />
             </div>
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">
-              GlobalCraft AI
+              SoraLocalik AI
             </span>
           </div>
 
@@ -290,7 +290,7 @@ try {
                 {isSignUp ? 'Create SaaS Account' : 'Welcome Back'}
               </h2>
               <p className="text-slate-400 text-xs mt-1">
-                {isSignUp ? 'Sign up to get 3 Free AI Localizations.' : 'Login to access your Dashboard.'}
+                {isSignUp ? 'Sign up to get 3 Free AI Localizations per day.' : 'Login to access your Dashboard.'}
               </p>
             </div>
 
@@ -364,9 +364,9 @@ try {
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1">Starter Tier</h3>
                   <p className="text-slate-400 text-xs mb-4">For testing global markets with limited products.</p>
-                  <div className="text-2xl font-extrabold text-white mb-4">$0 <span className="text-xs font-normal text-slate-400">/ forever</span></div>
+                  <div className="text-2xl font-extrabold text-white mb-4">$0 <span className="text-xs font-normal text-slate-400">/ free plan</span></div>
                   <ul className="space-y-2 text-xs text-slate-300 mb-6">
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 3 Free AI Localizations</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 3 Free AI Localizations per day</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Standard Claude AI Engine</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Supabase Storage Sync</li>
                   </ul>
@@ -413,7 +413,7 @@ try {
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
-            E-commerce AI Localizer
+            SoraLocalik AI: E-commerce Product Localizer
           </h1>
           <p className="text-slate-400 text-sm md:text-base">
             Instantly adapt product copy and cultural nuances for global e-commerce markets.
