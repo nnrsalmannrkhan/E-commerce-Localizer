@@ -224,7 +224,7 @@ try {
               <Globe className="w-6 h-6" />
             </div>
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">
-              SoraLocalik AI
+              GroaALE
             </span>
           </div>
 
@@ -413,7 +413,7 @@ try {
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
-            SoraLocalik AI: E-commerce Product Localizer
+            GroaALE: E-commerce Product Localizer
           </h1>
           <p className="text-slate-400 text-sm md:text-base">
             Instantly adapt product copy and cultural nuances for global e-commerce markets.
