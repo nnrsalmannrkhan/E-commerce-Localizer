@@ -132,13 +132,17 @@ JSON Schema:
 
     const response = await anthropic.messages.create({
       model: modelName,
-      max_tokens: 2500,
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
 
-    console.log('AI model:', response.model, '| input tokens:', response.usage?.input_tokens, '| output tokens:', response.usage?.output_tokens);
+    console.log('AI model:', response.model, '| input tokens:', response.usage?.input_tokens, '| output tokens:', response.usage?.output_tokens, '| stop_reason:', response.stop_reason, '| blocks:', response.content.map((b) => b.type).join(','));
 
-    const rawText = response.content[0]?.text || '';
+    const rawText = response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
 
     // Advanced JSON Sanitizer
     let cleanJsonString = rawText
@@ -152,16 +156,23 @@ JSON Schema:
       cleanJsonString = jsonMatch[0];
     }
 
-    let parsedData = {};
+    let parsedData;
     try {
       parsedData = JSON.parse(cleanJsonString);
     } catch (e) {
-      console.error("JSON Parse Error, using raw fallbacks:", e.message);
-      parsedData = { 
-        localizedTitle: title,
-        localizedDescription: rawText,
-        culturalNotes: "Adapted for local context."
-      };
+      console.error('JSON Parse Error:', e.message, '| stop_reason:', response.stop_reason, '| raw length:', rawText.length);
+      return res.status(502).json({
+        status: 'error',
+        message: 'The AI response could not be read. Your credit was not used. Please try again.'
+      });
+    }
+
+    if (!parsedData || !parsedData.localizedDescription) {
+      console.error('AI JSON missing localizedDescription | stop_reason:', response.stop_reason);
+      return res.status(502).json({
+        status: 'error',
+        message: 'The AI response was incomplete. Your credit was not used. Please try again.'
+      });
     }
 
     const finalResult = {
