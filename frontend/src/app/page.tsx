@@ -421,7 +421,7 @@ try {
                   disabled
                   className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-xs font-medium shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
                 >
-                  <ShieldCheck className="w-4 h-4" /> Subscribe: Coming soon
+                  <ShieldCheck className="w-4 h-4" /> Subscribe: 'Coming soon'
                 </button>
               </div>
             </div>
