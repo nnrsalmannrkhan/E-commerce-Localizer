@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile'; import React, { useState, useEffect } from 'react';
 import { Sparkles, Globe, Copy, Check, ShoppingBag, ArrowRight, RefreshCw, Layers, CreditCard, Zap, ShieldCheck, LogIn, LogOut, UserCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
   
   // Load Lemon Squeezy Script
   useEffect(() => {
@@ -84,13 +86,17 @@ export default function Dashboard() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+      if (!captchaToken) {
+      alert('Please complete the captcha first.');
+      return;
+    }
     setAuthLoading(true);
-
     try {
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email: authInputEmail,
           password: authInputPassword,
+          options: { captchaToken: captchaToken ?? undefined },
         });
         if (error) throw error;
         alert('Registration successful! You are now logged in.');
@@ -98,6 +104,7 @@ export default function Dashboard() {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: authInputEmail,
           password: authInputPassword,
+          options: { captchaToken: captchaToken ?? undefined },
         });
         if (error) throw error;
       }
@@ -111,6 +118,8 @@ export default function Dashboard() {
       alert('Authentication error: ' + err.message);
     } finally {
       setAuthLoading(false);
+      setCaptchaToken(null);
+      setCaptchaKey((k) => k + 1); // token ek-bar-er, tai widget reset
     }
   };
 
@@ -168,7 +177,7 @@ try {
       const resData = await response.json();
 
       if (resData.status === 'limit_exceeded') {
-        alert('Free limit reached (3/3). Upgrade to Pro for unlimited access.');
+        alert('Free limit reached (3/3). Upgrade to Pro access.');
         setShowPricing(true);
         return;
       }
@@ -239,7 +248,7 @@ try {
 
                 {isPro ? (
                   <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                    <Zap className="w-3 h-3 fill-amber-400" /> Pro Unlimited
+                    <Zap className="w-3 h-3 fill-amber-400" /> Pro 10 per day
                   </span>
                 ) : (
                   <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold">
@@ -319,10 +328,21 @@ try {
                 />
               </div>
 
+              <div className="flex justify-center">
+                <Turnstile
+                  key={captchaKey}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
+                  onSuccess={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                  options={{ theme: 'dark' }}
+                />
+              </div>
+
               <button
                 type="submit"
-                disabled={authLoading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                disabled={authLoading || !captchaToken}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {authLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : (isSignUp ? 'Sign Up' : 'Login')}
               </button>
@@ -352,7 +372,7 @@ try {
             </button>
             <div className="text-center mb-8">
               <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Unlock Unlimited Access
+                Unlock Pro Access
               </span>
               <h2 className="text-2xl md:text-3xl font-bold text-white mt-3">Choose Your SaaS Plan</h2>
               <p className="text-slate-400 text-xs md:text-sm mt-1">Scale your e-commerce store with high-converting localized copy.</p>
@@ -386,22 +406,22 @@ try {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-400 fill-amber-400" /> Pro Unlimited
+                    <Zap className="w-4 h-4 text-amber-400 fill-amber-400" /> Pro 10 per day
                   </h3>
                   <p className="text-slate-400 text-xs mb-4">For growing brands scaling sales internationally.</p>
                   <div className="text-2xl font-extrabold text-white mb-4">$29 <span className="text-xs font-normal text-slate-400">/ month</span></div>
                   <ul className="space-y-2 text-xs text-slate-300 mb-6">
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited AI Localizations</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 10 per day AI Localizations</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Premium Claude Sonnet AI Engine</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Full Cultural Market Insights</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> API Access & Shopify Export (Coming Soon)</li>
                   </ul>
                 </div>
                 <button
-                  onClick={() => handleCheckout('https://salmankhan.lemonsqueezy.com/checkout/buy/14440eeb-8d46-40fb-9def-32640137988b')}
-                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2" 
+                  disabled
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-xs font-medium shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
                 >
-                  <ShieldCheck className="w-4 h-4" /> Subscribe via Lemon Squeezy
+                  <ShieldCheck className="w-4 h-4" /> Subscribe: Coming soon
                 </button>
               </div>
             </div>
@@ -413,7 +433,7 @@ try {
       <main className="max-w-7xl mx-auto px-6 py-10">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
-            GroaALE: E-commerce Product Localizer
+            GroaALE: E commerce Product Localizer
           </h1>
           <p className="text-slate-400 text-sm md:text-base">
             Instantly adapt product copy and cultural nuances for global e-commerce markets.

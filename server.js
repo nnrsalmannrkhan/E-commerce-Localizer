@@ -6,6 +6,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const crypto = require('crypto');
 
 const app = express();
+app.set('trust proxy', 1); // Render er ekta proxy; na dile sobar IP ek hoye jay
 
 // Direct Native CORS Array Configuration
 app.use(cors({
@@ -40,9 +41,24 @@ app.get('/api/v1/health', async (req, res) => {
     if (error) throw error;
     res.json({ status: 'success', message: 'Backend & Supabase connected successfully!' });
   } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
+    console.error('Health check error:', err.message);
+    res.status(500).json({ status: 'error', message: 'Service unavailable.' });
   }
 });
+
+const rateLimit = require('express-rate-limit');
+
+const disposableDomains = new Set(require('disposable-email-domains'));
+const localizeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minute
+  limit: 15,                // ek IP theke 10 minute e max 15 request
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
+  message: { status: 'error', message: 'Too many requests. Please wait a few minutes and try again.' }
+});
+
+app.use('/api/v1/localize', localizeLimiter);
 
 // ==========================================
 // 1. Localization API Route
@@ -63,11 +79,39 @@ app.post('/api/v1/localize', async (req, res) => {
       return res.status(401).json({ status: 'error', message: 'Invalid or expired session. Please login again.' });
     }
     const userEmail = userData.user.email;
+        // Block temporary / disposable email domains
+    const emailDomain = (userEmail.split('@')[1] || '').toLowerCase();
+    if (disposableDomains.has(emailDomain)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Temporary email addresses are not allowed. Please use a permanent email.'
+      });
+    }
     
     if (!title || !description || !targetLanguage) {
       return res.status(400).json({ 
         error: 'Missing required fields: title, description, and targetLanguage are required.' 
       });
+    }
+
+    // Input type + length limits (cost and abuse control)
+    if (
+      typeof title !== 'string' ||
+      typeof description !== 'string' ||
+      typeof targetLanguage !== 'string' ||
+      (targetMarket != null && typeof targetMarket !== 'string')
+    ) {
+      return res.status(400).json({ status: 'error', message: 'Invalid input.' });
+    }
+
+    if (title.length > 200) {
+      return res.status(400).json({ status: 'error', message: 'Title is too long (max 200 characters).' });
+    }
+    if (description.length > 2000) {
+      return res.status(400).json({ status: 'error', message: 'Description is too long (max 2000 characters).' });
+    }
+    if (targetLanguage.length > 60 || (targetMarket && targetMarket.length > 60)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid language or market.' });
     }
 
        // Free User & Pro Status Check (daily limit, UTC date)
@@ -86,7 +130,7 @@ app.post('/api/v1/localize', async (req, res) => {
         console.error('Profile select error:', profileError.message);
         return res.status(500).json({
           status: 'error',
-          message: 'Could not read profile: ' + profileError.message
+          message: 'Could not read profile. Please try again.'
         });
       }
 
@@ -101,11 +145,48 @@ app.post('/api/v1/localize', async (req, res) => {
       isProUser = profile.is_pro === true;
       usedToday = profile.last_credit_date === todayStr ? (profile.credits_used || 0) : 0;
 
-      if (!isProUser && usedToday >= 3) {
+      const PRO_DAILY_LIMIT = 10;
+      const FREE_DAILY_LIMIT = 3;
+      const FREE_ACTIVE_USERS_CAP = 100; // ek diney max koto jon free user generate korte parbe
+
+      // Pro daily cap
+      if (isProUser && usedToday >= PRO_DAILY_LIMIT) {
+        return res.status(429).json({
+          status: 'pro_limit_exceeded',
+          message: `Pro daily limit reached (${PRO_DAILY_LIMIT}/${PRO_DAILY_LIMIT}). It resets at 00:00 UTC.`
+        });
+      }
+
+      // Free per-user daily limit
+      if (!isProUser && usedToday >= FREE_DAILY_LIMIT) {
         return res.status(403).json({
           status: 'limit_exceeded',
-          message: 'Daily free limit reached (3/3). Upgrade to Pro Unlimited or come back tomorrow.'
+          message: 'Daily free limit reached (3/3). Upgrade to Pro or come back tomorrow.'
         });
+      }
+
+      // Free total daily budget (temp-mail account farming rokhar jonno)
+      if (!isProUser && usedToday === 0) {
+        const { count: activeFreeToday, error: budgetError } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('last_credit_date', todayStr)
+          .eq('is_pro', false);
+
+        if (budgetError) {
+          console.error('Free budget check error:', budgetError.message);
+          return res.status(500).json({
+            status: 'error',
+            message: 'Something went wrong. Please try again.'
+          });
+        }
+
+        if ((activeFreeToday || 0) >= FREE_ACTIVE_USERS_CAP) {
+          return res.status(503).json({
+            status: 'free_capacity_reached',
+            message: 'Free capacity for today is full. Please try again tomorrow or upgrade to Pro.'
+          });
+        }
       }
     }
 
@@ -194,8 +275,8 @@ JSON Schema:
       }
     ]);
 
-    // Increment credits_used if it's a free user
-    if (userEmail && !isProUser) {
+    // Increment credits_used (free and Pro both, daily count)
+    if (userEmail) {
       const { data: updatedRows, error: updateError } = await supabase
         .from('profiles')
         .update({ credits_used: usedToday + 1, last_credit_date: todayStr })
@@ -218,7 +299,7 @@ JSON Schema:
 
   } catch (err) {
     console.error('AI Localization Error:', err);
-    res.status(500).json({ status: 'error', message: err.message });
+    res.status(500).json({ status: 'error', message: 'Something went wrong while generating. Please try again.' });
   }
 });
 
